@@ -121,6 +121,26 @@
 			 dev == PCI_CHIP_IVYBRIDGE_M_GT2 || \
 			 dev == PCI_CHIP_IVYBRIDGE_S)
 
+#define IS_GEN5(dev) (dev == 0x0042 ||	\
+		      dev == 0x0046)
+
+#define IS_GEN6(dev) (dev == 0x0102 ||	\
+		      dev == 0x0112 ||	\
+		      dev == 0x0122 ||	\
+		      dev == 0x0106 ||	\
+		      dev == 0x0116 ||	\
+		      dev == 0x0126 ||	\
+		      dev == 0x010A)
+
+#define IS_IVYBRIDGE(dev) \
+		     (dev == 0x0152 ||	\
+		      dev == 0x0162 ||	\
+		      dev == 0x0156 ||	\
+		      dev == 0x0166 ||	\
+		      dev == 0x015a)
+
+#define IS_GEN7(dev) IS_IVYBRIDGE(dev)
+
 #define IS_G4X(dev) (dev == 0x2E02 || \
                      dev == 0x2E12 || \
                      dev == 0x2E22 || \

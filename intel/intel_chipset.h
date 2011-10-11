@@ -96,8 +96,6 @@
 		      dev == 0x2E22 ||	\
 		      dev == 0x2E32 ||	\
 		      dev == 0x2E42 ||	\
-		      dev == 0x0042 ||	\
-		      dev == 0x0046 ||	\
 		      IS_I965GM(dev) || \
 		      IS_G4X(dev))
 

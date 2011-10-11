@@ -36,6 +36,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
 struct drm_clip_rect;
 
@@ -84,7 +85,55 @@ struct _drm_intel_bo {
 	int handle;
 };
 
+/*
+ * The information needed by aub DUMP_BMP command
+ *
+ * NOTE: this is for aub dump
+ */
+struct drm_intel_aub_surf_state {
+	/*
+	 * The surf bo:
+	 * the aub_offset filed points to the base_address of the surface
+	 */
+	drm_intel_bo * surf;
+	uint16_t width;
+	uint16_t height;
+	uint16_t y_offset;
+	uint16_t x_offset;
+
+	int bytes_per_pixel;
+
+	uint32_t tile_walk:1;
+	uint32_t tiled_surface:1;
+	uint32_t pad:1;
+	uint32_t pitch:18;
+	uint32_t depth:11;
+};
+
+/*
+ * STATE BASE ADDRESS
+ *
+ * NOTE: this is for aub dump
+ */
+struct drm_intel_aub_base_addr_info {
+	uint32_t general_state_base_addr;
+	uint32_t surf_state_base_addr;
+	uint32_t indirect_obj_base_addr;
+};
+
+
+
 #define BO_ALLOC_FOR_RENDER (1<<0)
+
+int drm_intel_aub_set_surf_state(drm_intel_bufmgr *bufmgr,
+			struct drm_intel_aub_surf_state *ss, int count);
+
+/* For mesa, which put the surf_state object into the end of batchbuffer */
+void drm_intel_set_surf_offset(int);
+
+void drm_intel_set_surf_bo(drm_intel_bo *bo, int offset);
+
+int drm_intel_get_env_device(void);
 
 drm_intel_bo *drm_intel_bo_alloc(drm_intel_bufmgr *bufmgr, const char *name,
 				 unsigned long size, unsigned int alignment);
@@ -153,6 +202,8 @@ int drm_intel_gem_bo_unmap_gtt(drm_intel_bo *bo);
 int drm_intel_gem_bo_get_reloc_count(drm_intel_bo *bo);
 void drm_intel_gem_bo_clear_relocs(drm_intel_bo *bo, int start);
 void drm_intel_gem_bo_start_gtt_access(drm_intel_bo *bo, int write_enable);
+void drm_intel_bufmgr_gem_stop_aubfile(drm_intel_bufmgr *bufmgr);
+void drm_intel_bufmgr_gem_set_aubfile(drm_intel_bufmgr *bufmgr, FILE *file);
 
 int drm_intel_get_pipe_from_crtc_id(drm_intel_bufmgr *bufmgr, int crtc_id);
 

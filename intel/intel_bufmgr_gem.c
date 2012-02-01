@@ -2171,6 +2171,7 @@ aub_exec(drm_intel_bo *bo, int ring_flag)
 	if (surf_state_buffer)
 		free(surf_state_buffer);
 	surf_state_buffer = NULL;
+        surf_state_offset = 0;
 
 	fflush(bufmgr_gem->aub_file);
 

@@ -51,6 +51,7 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <stdarg.h>
+#include <assert.h>
 
 /* Not all systems have MAP_FAILED defined */
 #ifndef MAP_FAILED
@@ -158,8 +159,8 @@ void drmFree(void *pt)
 /**
  * Call ioctl, restarting if it is interupted
  */
-int
-drmIoctl(int fd, unsigned long request, void *arg)
+static int
+drmIoctl_inner(int fd, unsigned long request, void *arg)
 {
     int	ret;
 
@@ -167,6 +168,32 @@ drmIoctl(int fd, unsigned long request, void *arg)
 	ret = ioctl(fd, request, arg);
     } while (ret == -1 && (errno == EINTR || errno == EAGAIN));
     return ret;
+}
+
+int
+drmIoctl(int fd, unsigned long request, void *arg)
+{
+  switch (request) {
+  case DRM_IOCTL_GET_MAGIC:
+  case DRM_IOCTL_VERSION:
+  case 0xc0106446: // DRM_I915_GETPARAM
+  case 0x80106463: // DRM_IOCTL_I915_GEM_GET_APERTURE
+  case 0xc010645b: // DRM_IOCTL_I915_GEM_CREATE (drm_intel_bo_alloc)
+  case 0xc010640b: // DRM_IOCTL_GEM_OPEN (intel_bo_gem_create_from_name)
+  case 0xc00c6462: // DRM_IOCTL_I915_GEM_GET_TILING (intel_bo_gem_create_from_name)
+  case 0x4020645d: // DRM_IOCTL_I915_GEM_PWRITE (drm_intel_bo_subdata)
+  case 0xc020645e: // DRM_IOCTL_I915_GEM_MMAP (drm_intel_bo_map)
+  case 0x400c645f: // DRM_IOCTL_I915_GEM_SET_DOMAIN (drm_intel_bo_map)
+  case 0x40406469: // DRM_IOCTL_I915_GEM_EXECBUFFER2 (drm_intel_bo_mrb_exec)
+  case 0xc00c6466: // DRM_IOCTL_I915_GEM_MADVISE (drm_intel_bo_unreference)
+  case 0xc0086457: // DRM_IOCTL_I915_GEM_BUSY (drm_intel_bo_alloc)
+  case 0x40086409: // DRM_IOCTL_GEM_CLOSE (drm_intel_bufmgr_destroy)
+    return drmIoctl_inner(fd, request, arg);
+  }
+  printf("Unknown request 0x%lx\n", request);
+  assert(0);
+  errno = EINVAL;
+  return -1;
 }
 
 static unsigned long drmGetKeyFromFd(int fd)

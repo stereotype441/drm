@@ -80,6 +80,8 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+#define FIRST_AUB_BATCH 0
+
 typedef struct _drm_intel_bo_gem drm_intel_bo_gem;
 
 struct drm_intel_gem_bo_bucket {
@@ -1986,12 +1988,16 @@ drm_intel_gem_bo_aub_dump_bmp(drm_intel_bo *bo,
 static void
 aub_exec(drm_intel_bo *bo, int ring_flag, int used)
 {
+  static int count = 0;
 	drm_intel_bufmgr_gem *bufmgr_gem = (drm_intel_bufmgr_gem *) bo->bufmgr;
 	drm_intel_bo_gem *bo_gem = (drm_intel_bo_gem *) bo;
 	int i;
 
 	if (!bufmgr_gem->aub_file)
 		return;
+
+        if (count++ < FIRST_AUB_BATCH)
+          return;
 
 	/* Write out all but the batchbuffer to AUB memory */
 	for (i = 0; i < bufmgr_gem->exec_count - 1; i++) {
@@ -2681,7 +2687,7 @@ drm_intel_bufmgr_gem_set_aub_dump(drm_intel_bufmgr *bufmgr, int enable)
 	drm_intel_bufmgr_gem *bufmgr_gem = (drm_intel_bufmgr_gem *)bufmgr;
 	int entry = 0x200003;
 	int i;
-	int gtt_size = 0x10000;
+	int gtt_size = 0x20000;
 
 	if (!enable) {
 		if (bufmgr_gem->aub_file) {

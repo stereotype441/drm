@@ -74,6 +74,8 @@
 #define VG(x)
 #endif
 
+#define PERSISTENT_AUB_BOS
+
 #define VG_CLEAR(s) VG(memset(&s, 0, sizeof(s)))
 
 #define DBG(...) do {					\
@@ -225,6 +227,10 @@ struct _drm_intel_bo_gem {
 	bool mapped_cpu_write;
 
 	uint32_t aub_offset;
+
+#ifdef PERSISTENT_AUB_BOS
+	bool aub_data_written;
+#endif
 
 	drm_intel_aub_annotation *aub_annotations;
 	unsigned aub_annotation_count;
@@ -1375,6 +1381,9 @@ static int drm_intel_gem_bo_unmap(drm_intel_bo *bo)
 		ret = ret == -1 ? -errno : 0;
 
 		bo_gem->mapped_cpu_write = false;
+#ifdef PERSISTENT_AUB_BOS
+		bo_gem->aub_data_written = false;
+#endif
 	}
 
 	/* We need to unmap after every innovation as we cannot track
@@ -1413,6 +1422,9 @@ drm_intel_gem_bo_subdata(drm_intel_bo *bo, unsigned long offset,
 	ret = drmIoctl(bufmgr_gem->fd,
 		       DRM_IOCTL_I915_GEM_PWRITE,
 		       &pwrite);
+#ifdef PERSISTENT_AUB_BOS
+	bo_gem->aub_data_written = false;
+#endif
 	if (ret != 0) {
 		ret = -errno;
 		DBG("%s:%d: Error writing data to buffer %d: (%d %d) %s .\n",
@@ -1973,6 +1985,13 @@ aub_write_bo(drm_intel_bo *bo)
 	uint32_t offset = 0;
 	unsigned i;
 
+#ifdef PERSISTENT_AUB_BOS
+	if (bo_gem->aub_data_written) {
+		/* Buffer already written to AUB memory */
+		return;
+	}
+#endif
+
 	aub_bo_get_address(bo);
 
 	/* Write out each annotated section separately. */
@@ -1996,6 +2015,10 @@ aub_write_bo(drm_intel_bo *bo)
 		aub_write_large_trace_block(bo, AUB_TRACE_TYPE_NOTYPE, 0,
 					    offset, bo->size - offset);
 	}
+
+#ifdef PERSISTENT_AUB_BOS
+	bo_gem->aub_data_written = true;
+#endif
 }
 
 /*
@@ -2115,12 +2138,14 @@ aub_exec(drm_intel_bo *bo, int ring_flag, int used)
 
 	fflush(bufmgr_gem->aub_file);
 
+#ifndef PERSISTENT_AUB_BOS
 	/*
 	 * One frame has been dumped. So reset the aub_offset for the next frame.
 	 *
 	 * FIXME: Can we do this?
 	 */
 	bufmgr_gem->aub_offset = 0x10000;
+#endif
 }
 
 static int
